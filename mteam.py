@@ -13,9 +13,9 @@ __description__ = ''
 __epilog__ = 'Report bugs to <yehcj.tw@gmail.com>'
 
 __url__ = {
-    'detail': 'https://kp.m-team.cc/api/torrent/detail',
-    'download': 'https://kp.m-team.cc/api/torrent/genDlToken',
-    'free': 'https://kp.m-team.cc/api/torrent/search'
+    'detail': 'https://api.m-team.cc/api/torrent/detail',
+    'download': 'https://api.m-team.cc/api/torrent/genDlToken',
+    'free': 'https://api.m-team.cc/api/torrent/search'
 }
 __torrent__ = '{id}.torrent'
 __log__ = '{id}: {discount}'
@@ -103,8 +103,10 @@ class MTeam():
                         file = __torrent__.format(id=id)
                         if output != '':
                             file = os.path.join(output, file)
-                        with open(file, 'wb') as fp:
-                            fp.write(response.content)
+
+                        if not os.path.exists(file):
+                            with open(file, 'wb') as fp:
+                                fp.write(response.content)
 
         except Exception as e:
             print(str(e))
