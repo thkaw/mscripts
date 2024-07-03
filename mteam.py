@@ -18,6 +18,7 @@ __url__ = {
     'free': 'https://api.m-team.cc/api/torrent/search'
 }
 __torrent__ = '{id}.torrent'
+__synology__ = '{id}.torrent.loaded'
 __log__ = '{id}: {discount}'
 
 class MTeam():
@@ -26,8 +27,8 @@ class MTeam():
             description=__description__,
             epilog=__epilog__
         )
-        parser.add_argument('mode', type=str, choices={ 'latest', 'free' }, default='free')
-        args = parser.parse_args(sys.argv[1:])
+        parser.add_argument('mode', type=str, choices={ 'latest', 'search' }, default='search')
+        args = parser.parse_args(sys.argv[1:2])
 
         getattr(self, args.mode)()
 
@@ -81,12 +82,22 @@ class MTeam():
             if 'FREE' == detail['status']['discount']:
                 self.download(args.key, id, args.output)
 
+    def _exist(self, path, name):
+        torrent = __torrent__.format(id=id)
+        synology = __synology__.format(id=id)
+
+        if path != '':
+            torrent = os.path.join(path, torrent)
+            synology = os.path.join(path, synology)
+
+        return os.path.exists(torrent) or os.path.exists(synology)
+
     def download(self, key, id, output):
         headers = { 'x-api-key': key }
         payload = { 'id': id }
 
         try:
-            time.sleep(random.randint(5, 10))
+            time.sleep(random.randint(2, 5))
             response = requests.request(
                 'POST',
                 __url__['download'],
@@ -100,12 +111,11 @@ class MTeam():
 
                     response = requests.get(url)
                     if response.status_code == 200:
-                        file = __torrent__.format(id=id)
-                        if output != '':
-                            file = os.path.join(output, file)
-
-                        if not os.path.exists(file):
-                            with open(file, 'wb') as fp:
+                        if not self._exist(output, id):
+                            torrent = __torrent__.format(id=id)
+                            if output != '':
+                                torrent = os.path.join(output, torrent)
+                            with open(torrent, 'wb') as fp:
                                 fp.write(response.content)
 
         except Exception as e:
@@ -115,7 +125,7 @@ class MTeam():
         payload = { 'id': id }
         headers = { 'x-api-key': key }
         try:
-            time.sleep(random.randint(5, 10))
+            time.sleep(random.randint(2, 5))
             response = requests.request(
                 'POST',
                 __url__['detail'],
@@ -137,16 +147,18 @@ class MTeam():
 
         return None
 
-    def _free(self, key):
+    def _search(self, key, mode, free):
         headers = { 'x-api-key': key }
         payload = {
-            'mode': 'adult',
+            'mode': mode,
             'pageNumber': 1,
             'pageSize': 25
         }
+        if free:
+            payload['discount'] = 'FREE'
 
         try:
-            time.sleep(random.randint(5, 10))
+            time.sleep(random.randint(2, 5))
             response = requests.request(
                 'POST',
                 __url__['free'],
@@ -162,10 +174,17 @@ class MTeam():
             print(str(e))
             exit()
 
-    def free(self):
+    def search(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--key', type=str, required=False, default=None)
-        parser.add_argument('--output', type=str, default=None)
+        parser.add_argument('--key', type=str, required=False, default=None, help='')
+        parser.add_argument('--output', type=str, default=None, help='')
+        parser.add_argument(
+            '--mode',
+            choices={ 'normal', 'adult', 'movie', 'music', 'tvshow', 'waterfall', 'rss', 'rankings' },
+            default='adult',
+            help=''
+        )
+        parser.add_argument('--free', action='store_true', default=False, help='')
         args = parser.parse_args(sys.argv[2:])
 
         # auto using config as input
@@ -174,7 +193,7 @@ class MTeam():
             args.key = config['key']
             args.output = config['output']
 
-        items = self._free(args.key)
+        items = self._search(args.key, args.mode, args.free)
 
         for item in items:
             id = item['id']
