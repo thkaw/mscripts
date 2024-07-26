@@ -27,7 +27,7 @@ class MTeam():
             description=__description__,
             epilog=__epilog__
         )
-        parser.add_argument('mode', type=str, choices={ 'latest', 'search' }, default='search')
+        parser.add_argument('mode', type=str, choices={ 'latest', 'search', 'download' }, default='search')
         args = parser.parse_args(sys.argv[1:2])
 
         getattr(self, args.mode)()
@@ -80,9 +80,9 @@ class MTeam():
 
             print(__log__.format(id=id, discount=detail['status']['discount']))
             if 'FREE' == detail['status']['discount']:
-                self.download(args.key, id, args.output)
+                self._download(args.key, id, args.output)
 
-    def _exist(self, path, name):
+    def _exist(self, path, id):
         torrent = __torrent__.format(id=id)
         synology = __synology__.format(id=id)
 
@@ -92,7 +92,7 @@ class MTeam():
 
         return os.path.exists(torrent) or os.path.exists(synology)
 
-    def download(self, key, id, output):
+    def _download(self, key, id, output):
         headers = { 'x-api-key': key }
         payload = { 'id': id }
 
@@ -112,14 +112,37 @@ class MTeam():
                     response = requests.get(url)
                     if response.status_code == 200:
                         if not self._exist(output, id):
+                            print('download')
                             torrent = __torrent__.format(id=id)
                             if output != '':
                                 torrent = os.path.join(output, torrent)
                             with open(torrent, 'wb') as fp:
-                                fp.write(response.content)
+                                fp.rite(response.content)
+                        else:
+                            print('exist')
+                    else:
+                        print('download fail')
+            else:
+                print('request fail')
 
         except Exception as e:
             print(str(e))
+
+    def download(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--id', type=str, nargs='+', required=True, default=None)
+        parser.add_argument('--key', type=str, required=False, default=None)
+        parser.add_argument('--output', type=str, default=None)
+        args = parser.parse_args(sys.argv[2:])
+
+        # auto using config as input
+        if args.key == None:
+            config = self.load()
+            args.key = config['key']
+            args.output = config['output']
+
+        for id in args.id:
+            self._download(args.key, id, args.output)
 
     def detail(self, key, id):
         payload = { 'id': id }
@@ -204,7 +227,7 @@ class MTeam():
 
             print(__log__.format(id=id, discount=detail['status']['discount']))
             if 'FREE' == detail['status']['discount']:
-                self.download(args.key, id, args.output)
+                self._download(args.key, id, args.output)
 
 def main():
     mt = MTeam()
