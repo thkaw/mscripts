@@ -117,7 +117,7 @@ class MTeam():
                             if output != '':
                                 torrent = os.path.join(output, torrent)
                             with open(torrent, 'wb') as fp:
-                                fp.rite(response.content)
+                                fp.write(response.content)
                         else:
                             print('exist')
                     else:
