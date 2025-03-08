@@ -19,7 +19,7 @@ __url__ = {
 }
 __torrent__ = '{id}.torrent'
 __synology__ = '{id}.torrent.loaded'
-__log__ = '{id}: {discount}'
+__log__ = '{id}: {discount}\n{name}'
 
 class MTeam():
     def __init__(self):
@@ -27,12 +27,16 @@ class MTeam():
             description=__description__,
             epilog=__epilog__
         )
-        parser.add_argument('mode', type=str, choices={ 'latest', 'search', 'download' }, default='search')
+        parser.add_argument(
+            'mode',
+            type=str,
+            choices={ 'latest', 'search', 'download' },
+            default='search'
+        )
         args = parser.parse_args(sys.argv[1:2])
-
         getattr(self, args.mode)()
 
-    def load(self):
+    def load(self) -> dict:
         file = 'mteam.json'
         if os.path.exists(file):
             with open(file, 'r') as fp:
@@ -45,7 +49,7 @@ class MTeam():
             print('file to load config')
             exit()
 
-    def _latest(self, key, rss):
+    def _latest(self, key: str, rss: str) -> list[dict]:
         try:
             response = requests.get(rss, headers={ 'x-api-key': key })
             if response.status_code == 200:
@@ -62,6 +66,7 @@ class MTeam():
         parser.add_argument('--key', type=str, required=False, default=None)
         parser.add_argument('--rss', type=str, required=False, default=None)
         parser.add_argument('--output', type=str, default=None)
+        parser.add_argument('--free', action='store_true', default=False, help='')
         args = parser.parse_args(sys.argv[2:])
 
         # auto using config as input
@@ -71,18 +76,24 @@ class MTeam():
             args.rss = config['rss']
             args.output = config['output']
 
-        for item in self._latest(args.key, args.rss):
-            id = item['guid']['#text']
-            detail = self.detail(args.key, id)
+        for item in self._latest(key=args.key, rss=args.rss):
+            id = item['guid']
+            detail = self.detail(key=args.key, id=id)
 
             if detail == None:
                 continue
+            print(__log__.format(
+                id=id,
+                discount=detail['status']['discount'],
+                name=detail['name'])
+            )
+            if args.free and 'FREE' != detail['status']['discount']:
+                print('skip')
+                continue
 
-            print(__log__.format(id=id, discount=detail['status']['discount']))
-            if 'FREE' == detail['status']['discount']:
-                self._download(args.key, id, args.output)
+            self._download(key=args.key, id=id, output=args.output)
 
-    def _exist(self, path, id):
+    def _exist(self, path: str, id: str) -> bool:
         torrent = __torrent__.format(id=id)
         synology = __synology__.format(id=id)
 
@@ -92,7 +103,7 @@ class MTeam():
 
         return os.path.exists(torrent) or os.path.exists(synology)
 
-    def _download(self, key, id, output):
+    def _download(self, key: str, id: str, output: str) -> None:
         headers = { 'x-api-key': key }
         payload = { 'id': id }
 
@@ -128,7 +139,7 @@ class MTeam():
         except Exception as e:
             print(str(e))
 
-    def download(self):
+    def download(self) -> None:
         parser = argparse.ArgumentParser()
         parser.add_argument('--id', type=str, nargs='+', required=True, default=None)
         parser.add_argument('--key', type=str, required=False, default=None)
@@ -142,9 +153,10 @@ class MTeam():
             args.output = config['output']
 
         for id in args.id:
-            self._download(args.key, id, args.output)
+            print(id)
+            self._download(key=args.key, id=id, output=args.output)
 
-    def detail(self, key, id):
+    def detail(self, key: str, id: str) -> dict:
         payload = { 'id': id }
         headers = { 'x-api-key': key }
         try:
@@ -170,12 +182,19 @@ class MTeam():
 
         return None
 
-    def _search(self, key, mode, free):
+    def _search(
+            self,
+            key: str,
+            mode: str,
+            free: bool,
+            index: int,
+            size: int
+        ) -> list[dict]:
         headers = { 'x-api-key': key }
         payload = {
             'mode': mode,
-            'pageNumber': 1,
-            'pageSize': 25
+            'pageNumber': index,
+            'pageSize': size
         }
         if free:
             payload['discount'] = 'FREE'
@@ -197,17 +216,34 @@ class MTeam():
             print(str(e))
             exit()
 
-    def search(self):
+    def search(self) -> None:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--key', type=str, required=False, default=None, help='')
+        parser.add_argument(
+            '--key',
+            type=str,
+            required=False,
+            default=None,
+            help=''
+        )
         parser.add_argument('--output', type=str, default=None, help='')
         parser.add_argument(
             '--mode',
-            choices={ 'normal', 'adult', 'movie', 'music', 'tvshow', 'waterfall', 'rss', 'rankings' },
+            choices={
+                'normal',
+                'adult',
+                'movie',
+                'music',
+                'tvshow',
+                'waterfall',
+                'rss',
+                'rankings'
+            },
             default='adult',
             help=''
         )
         parser.add_argument('--free', action='store_true', default=False, help='')
+        parser.add_argument('--index', type=int, default=1, help='')
+        parser.add_argument('--size', type=int, default=25, help='')
         args = parser.parse_args(sys.argv[2:])
 
         # auto using config as input
@@ -216,7 +252,13 @@ class MTeam():
             args.key = config['key']
             args.output = config['output']
 
-        items = self._search(args.key, args.mode, args.free)
+        items = self._search(
+            key=args.key,
+            mode=args.mode,
+            free=args.free,
+            index=args.index,
+            size=args.size
+        )
 
         for item in items:
             id = item['id']
@@ -224,10 +266,15 @@ class MTeam():
 
             if detail == None:
                 continue
+            if args.free and 'FREE' != detail['status']['discount']:
+                continue
 
-            print(__log__.format(id=id, discount=detail['status']['discount']))
-            if 'FREE' == detail['status']['discount']:
-                self._download(args.key, id, args.output)
+            print(__log__.format(
+                id=id,
+                discount=detail['status']['discount'],
+                name=detail['name']
+            ))
+            self._download(key=args.key, id=id, output=args.output)
 
 def main():
     mt = MTeam()
