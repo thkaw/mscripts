@@ -15,7 +15,7 @@ __epilog__ = 'Report bugs to <yehcj.tw@gmail.com>'
 __url__ = {
     'detail': 'https://api.m-team.cc/api/torrent/detail',
     'download': 'https://api.m-team.cc/api/torrent/genDlToken',
-    'free': 'https://api.m-team.cc/api/torrent/search'
+    'search': 'https://api.m-team.cc/api/torrent/search'
 }
 __torrent__ = '{id}.torrent'
 __synology__ = '{id}.torrent.loaded'
@@ -188,22 +188,24 @@ class MTeam():
             mode: str,
             free: bool,
             index: int,
-            size: int
+            size: int,
+            keyword: str
         ) -> list[dict]:
         headers = { 'x-api-key': key }
         payload = {
             'mode': mode,
             'pageNumber': index,
-            'pageSize': size
+            'pageSize': size,
         }
         if free:
             payload['discount'] = 'FREE'
+        if keyword is not None:
+            payload['keyword'] = keyword
 
         try:
             time.sleep(random.randint(2, 5))
-            response = requests.request(
-                'POST',
-                __url__['free'],
+            response = requests.post(
+                __url__['search'],
                 headers=headers,
                 json=payload
             )
@@ -244,6 +246,7 @@ class MTeam():
         parser.add_argument('--free', action='store_true', default=False, help='')
         parser.add_argument('--index', type=int, default=1, help='')
         parser.add_argument('--size', type=int, default=25, help='')
+        parser.add_argument('--keyword', type=str, default=None, help='')
         args = parser.parse_args(sys.argv[2:])
 
         # auto using config as input
@@ -257,7 +260,8 @@ class MTeam():
             mode=args.mode,
             free=args.free,
             index=args.index,
-            size=args.size
+            size=args.size,
+            keyword=args.keyword
         )
 
         for item in items:
