@@ -1,1 +1,8 @@
-{"rss": "", "key": "", "output": ""}
+{
+    // RSS filter get from:https://kp.m-team.cc/rss
+    "rss": "https://rss.m-teamXXXXXXXXXXXXXXXXXXXXXX",
+    // using token get from: https://kp.m-team.cc/usercp?tab=laboratory 
+    "key": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", 
+    // Torrent file output folder
+    "output": "/torrent/"
+}

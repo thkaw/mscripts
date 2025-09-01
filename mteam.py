@@ -15,7 +15,7 @@ __epilog__ = 'Report bugs to <yehcj.tw@gmail.com>'
 __url__ = {
     'detail': 'https://api.m-team.cc/api/torrent/detail',
     'download': 'https://api.m-team.cc/api/torrent/genDlToken',
-    'search': 'https://api.m-team.cc/api/torrent/search'
+    'free': 'https://api.m-team.cc/api/torrent/search'
 }
 __torrent__ = '{id}.torrent'
 __synology__ = '{id}.torrent.loaded'
@@ -87,7 +87,7 @@ class MTeam():
                 discount=detail['status']['discount'],
                 name=detail['name'])
             )
-            if args.free and 'FREE' != detail['status']['discount']:
+            if 'FREE' != detail['status']['discount']:
                 print('skip')
                 continue
 
@@ -188,24 +188,22 @@ class MTeam():
             mode: str,
             free: bool,
             index: int,
-            size: int,
-            keyword: str
+            size: int
         ) -> list[dict]:
         headers = { 'x-api-key': key }
         payload = {
             'mode': mode,
             'pageNumber': index,
-            'pageSize': size,
+            'pageSize': size
         }
         if free:
             payload['discount'] = 'FREE'
-        if keyword is not None:
-            payload['keyword'] = keyword
 
         try:
             time.sleep(random.randint(2, 5))
-            response = requests.post(
-                __url__['search'],
+            response = requests.request(
+                'POST',
+                __url__['free'],
                 headers=headers,
                 json=payload
             )
@@ -246,7 +244,6 @@ class MTeam():
         parser.add_argument('--free', action='store_true', default=False, help='')
         parser.add_argument('--index', type=int, default=1, help='')
         parser.add_argument('--size', type=int, default=25, help='')
-        parser.add_argument('--keyword', type=str, default=None, help='')
         args = parser.parse_args(sys.argv[2:])
 
         # auto using config as input
@@ -260,8 +257,7 @@ class MTeam():
             mode=args.mode,
             free=args.free,
             index=args.index,
-            size=args.size,
-            keyword=args.keyword
+            size=args.size
         )
 
         for item in items:
@@ -270,7 +266,8 @@ class MTeam():
 
             if detail == None:
                 continue
-            if args.free and 'FREE' != detail['status']['discount']:
+
+            if 'FREE' != detail['status']['discount']:
                 continue
 
             print(__log__.format(
@@ -278,6 +275,7 @@ class MTeam():
                 discount=detail['status']['discount'],
                 name=detail['name']
             ))
+
             self._download(key=args.key, id=id, output=args.output)
 
 def main():
