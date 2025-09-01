@@ -24,3 +24,9 @@ To execute `backup.py`, override the command:
 ```bash
 docker run --rm -v /path/to/src:/src -v /path/to/dst:/dst mscripts backup.py /src /dst
 ```
+
+Example, get latest free torrent:
+
+```bash
+docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py latest --output /torrent/
+```
