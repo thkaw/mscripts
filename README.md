@@ -25,8 +25,24 @@ To execute `backup.py`, override the command:
 docker run --rm -v /path/to/src:/src -v /path/to/dst:/dst mscripts backup.py /src /dst
 ```
 
-Example, get latest free torrent:
+Example 1
+get latest free torrent(With assigned RSS source, specific classify), AKA 指定分類撕咬, --free mean free torrent only:
 
 ```bash
-docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py latest --output /torrent/
+docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py latest --free --output /torrent/
 ```
+
+Example 2
+get specific id torrent:
+
+```bash
+docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py download --id 1026806 --output /torrent/
+```
+
+Example 3
+get all classify search, without assigned RSS source, download all free torrent whatever it is (AKA 全面瘋狂撕咬):
+
+```bash
+docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py search --id 1026806 --output /torrent/
+```
+
