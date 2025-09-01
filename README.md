@@ -33,7 +33,7 @@ docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent
 ```
 
 Example 2
-get specific id torrent:
+get specific id 1026806 torrent:
 
 ```bash
 docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py download --id 1026806 --output /torrent/
@@ -43,6 +43,6 @@ Example 3
 get all classify search, without assigned RSS source, download all free torrent whatever it is (AKA 全面瘋狂撕咬):
 
 ```bash
-docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py search --id 1026806 --output /torrent/
+docker run --rm -v $(pwd)/mteam.json:/app/mteam.json -v $(pwd)/torrent/:/torrent/ mscripts mteam.py search --output /torrent/
 ```
 
